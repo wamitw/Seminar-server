@@ -14,11 +14,12 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     print("Got new socket!")
     with conn:
         print('Connected by', addr)
+        msg=str('')
         while True:
             data = conn.recv(1024)
             print("Received data")
             if not data:
                 break
             print(data)
-            msg += data
+            msg += str(data, "utf-8")
         print(msg)
