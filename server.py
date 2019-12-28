@@ -19,4 +19,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             print("Received data")
             if not data:
                 break
-            conn.sendall(data)
+            print(data)
+            msg += data
+        print(msg)
