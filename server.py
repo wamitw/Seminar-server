@@ -5,22 +5,16 @@ from io import StringIO
 
 def execRCE(code):
     old_stdout = sys.stdout
-    print("Before code execution")
     redirected_output = sys.stdout = StringIO()
-    st = exec(code)
+    exec(code)
     sys.stdout = old_stdout
-    print("After code execution with status=" + str(st))
     return redirected_output.getvalue()
 
 class MyTCPHandler(socketserver.BaseRequestHandler):
     def handle(self):
-        # self.request is the TCP socket connected to the client
         self.data = self.request.recv(1024).strip()
-        print("{} wrote:".format(self.client_address[0]))
-        print(self.data)
+        print("Got request from {}".format(self.client_address[0]))
         output = execRCE(self.data)
-        print("output is " + output)
-        # just send back the same data, but upper-cased
         self.request.sendall(output.encode('utf-8'))
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
@@ -53,6 +47,5 @@ if __name__ == "__main__":
     except IOError as e:
         print(e)
     except:
-        print("Undefined Error")
         print("Exiting...")
         exit
