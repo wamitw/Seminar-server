@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import socketserver, argparse, sys, threading
+import socketserver, argparse, sys, threading, atexit
 from io import StringIO
 
 def execRCE(code):
@@ -26,6 +26,9 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     pass
 
+def close_server(server):
+    server.shutdown()
+
 #Default Values
 HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
 PORT = 0            # Port to listen on (0 is arbitary availabe port)
@@ -44,6 +47,7 @@ if __name__ == "__main__":
         with ThreadedTCPServer((host, port), MyTCPHandler) as server:
             host, port = server.server_address
             print("Server started on {}:{}".format(host, port))
+            atexit.register(close_server, server)
             server.serve_forever()
 
     except IOError as e:
