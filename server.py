@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import socketserver, argparse, sys, threading, atexit
+import socketserver, argparse, sys, threading, atexit, ssl
 from io import StringIO
 
 def execRCE(code):
@@ -17,7 +17,28 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
         output = execRCE(self.data)
         self.request.sendall(output.encode('utf-8'))
 
-class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+class SSLTCPServer(socketserver.TCPServer):
+    def __init__(self,
+                 server_address,
+                 RequestHandlerClass,
+                 certfile,
+                 ssl_version=ssl.PROTOCOL_TLSv1,
+                 bind_and_activate=True):
+        socketserver.TCPServer.__init__(self, server_address, RequestHandlerClass, bind_and_activate)
+        self.certfile = certfile
+        self.keyfile = certfile
+        self.ssl_version = ssl_version
+
+    def get_request(self):
+        newsocket, fromaddr = self.socket.accept()
+        connstream = ssl.wrap_socket(newsocket,
+                                 server_side=True,
+                                 certfile = self.certfile,
+                                 keyfile = self.certfile,
+                                 ssl_version = self.ssl_version)
+        return connstream, fromaddr
+
+class ThreadedTCPServer(socketserver.ThreadingMixIn, SSLTCPServer):
     pass
 
 def close_server(server):
@@ -38,7 +59,7 @@ if __name__ == "__main__":
     print("Starting server on {}:{}".format(host, port))
     try:
         # Create the server, binding to localhost on port 9999
-        with ThreadedTCPServer((host, port), MyTCPHandler) as server:
+        with ThreadedTCPServer((host, port), MyTCPHandler,"cert.pem") as server:
             host, port = server.server_address
             print("Server started on {}:{}".format(host, port))
             atexit.register(close_server, server)
