@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import socketserver, argparse, sys
+import socketserver, argparse, sys, threading
 from io import StringIO
 
 def execRCE(code):
@@ -23,9 +23,12 @@ class MyTCPHandler(socketserver.BaseRequestHandler):
         # just send back the same data, but upper-cased
         self.request.sendall(output.encode('utf-8'))
 
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    pass
+
 #Default Values
 HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
-PORT = 65432        # Port to listen on (non-privileged ports are > 1023)
+PORT = 0            # Port to listen on (0 is arbitary availabe port)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Server that accept python remote code execution and returns their result')
@@ -38,10 +41,11 @@ if __name__ == "__main__":
     print("Starting server on {}:{}".format(host, port))
     try:
         # Create the server, binding to localhost on port 9999
-        with socketserver.TCPServer((HOST, PORT), MyTCPHandler) as server:
-            # Activate the server; this will keep running until you
-            # interrupt the program with Ctrl-C
+        with ThreadedTCPServer((host, port), MyTCPHandler) as server:
+            host, port = server.server_address
+            print("Server started on {}:{}".format(host, port))
             server.serve_forever()
+
     except IOError as e:
         print(e)
     except:
