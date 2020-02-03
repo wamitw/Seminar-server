@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import socketserver, argparse, sys, threading, atexit, ssl
+import socketserver, argparse, sys, threading, atexit, ssl, os
 from io import StringIO
 
 def execRCE(code):
@@ -44,6 +44,12 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, SSLTCPServer):
 def close_server(server):
     server.shutdown()
 
+def is_valid_file(parser, arg):
+    if not os.path.exists(arg):
+        parser.error("The file %s does not exist!" % arg)
+    else:
+        return arg
+
 #Default Values
 HOST = '127.0.0.1'  # Standard loopback interface address (localhost)
 PORT = 0            # Port to listen on (0 is arbitary availabe port)
@@ -52,14 +58,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Server that accept python remote code execution and returns their result')
     parser.add_argument('--host', default=HOST, action='store', type=str, help='Host to listen upon. default is ' + HOST + '.', dest='host')
     parser.add_argument('--port','-p', default=PORT, action='store', type=int, help='Port to listen upon. If not specified, arbitary port is chosen.', dest='port')
+    parser.add_argument('--certificate','-c', required=True, action='store', type=lambda x: is_valid_file(parser, x), help='Server Certificate (PEM file)', dest='cert')
 
     args = parser.parse_args()
-    host, port = args.host, args.port
+    host, port, cert_file = args.host, args.port, args.cert
 
     print("Starting server on {}:{}".format(host, port))
     try:
         # Create the server, binding to localhost on port 9999
-        with ThreadedTCPServer((host, port), MyTCPHandler,"cert.pem") as server:
+        with ThreadedTCPServer((host, port), MyTCPHandler,cert_file) as server:
             host, port = server.server_address
             print("Server started on {}:{}".format(host, port))
             atexit.register(close_server, server)
