@@ -50,8 +50,8 @@ PORT = 0            # Port to listen on (0 is arbitary availabe port)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Server that accept python remote code execution and returns their result')
-    parser.add_argument('--host', default=HOST, action='store', type=str, help='Host to listen upon. default is ' + HOST + '.')
-    parser.add_argument('--port','-p', default=PORT, action='store', type=int, help='Port to listen upon')
+    parser.add_argument('--host', default=HOST, action='store', type=str, help='Host to listen upon. default is ' + HOST + '.', dest='host')
+    parser.add_argument('--port','-p', default=PORT, action='store', type=int, help='Port to listen upon. If not specified, arbitary port is chosen.', dest='port')
 
     args = parser.parse_args()
     host, port = args.host, args.port
