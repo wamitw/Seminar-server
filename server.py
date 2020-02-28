@@ -1,21 +1,20 @@
 #!/usr/bin/env python3
 
+import docker
 import socketserver, argparse, sys, threading, atexit, ssl, os
 from io import StringIO
 
+client = docker.from_env()
+
 def execRCE(code):
-    old_stdout = sys.stdout
-    redirected_output = sys.stdout = StringIO()
-    exec(code)
-    sys.stdout = old_stdout
-    return redirected_output.getvalue()
+    return client.containers.run("my-app", environment={"CODE": code})
 
 class MyTCPHandler(socketserver.BaseRequestHandler):
     def handle(self):
         self.data = self.request.recv(1024).strip()
         print("Got request from {}".format(self.client_address[0]))
         output = execRCE(self.data)
-        self.request.sendall(output.encode('utf-8'))
+        self.request.sendall(output)
 
 class SSLTCPServer(socketserver.TCPServer):
     def __init__(self,
